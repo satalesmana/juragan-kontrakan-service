@@ -1,0 +1,26 @@
+{
+  "name": "nitro-starter",
+  "type": "module",
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev",
+    "preview": "nitro preview"
+  },
+  "imports": {
+    "#*": "./*"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "jiti": "^2.7.0",
+    "nitro": "latest",
+    "typescript": "latest"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.6.0",
+    "zod": "^4.6.5"
+  }
+}
