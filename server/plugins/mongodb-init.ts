@@ -1,16 +1,12 @@
 import { definePlugin } from 'nitro'
-import { connectDatabase, closeDatabase } from '../plugins/mongodb'
+import { connectDatabase, closeDatabase } from './mongodb'
 
-export default definePlugin(async (nitroApp) => {
-  nitroApp.hooks.hook('ready', async () => {
-    try {
-      await connectDatabase()
-    } catch (error) {
-      console.error('[mongodb] Failed to connect during startup:', error)
-    }
-  })
-
+export default definePlugin((nitroApp) => {
   nitroApp.hooks.hook('close', async () => {
-    await closeDatabase()
+    try {
+      await closeDatabase()
+    } catch (error) {
+      console.error('[mongodb] Failed to close during shutdown:', error)
+    }
   })
 })

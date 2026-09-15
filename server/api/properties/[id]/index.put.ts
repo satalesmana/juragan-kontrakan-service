@@ -1,6 +1,6 @@
 import { defineHandler, readBody, getRouterParam } from 'h3'
 import { sendSuccess, sendError } from '../../../utils/response'
-import { ValidationError,  NotFoundError } from '../../../utils/errors'
+import { ValidationError, NotFoundError } from '../../../utils/errors'
 import { PropertyService } from '../../../services/PropertyService'
 import { updatePropertySchema } from '../../../schemas/property'
 
@@ -16,7 +16,7 @@ export default defineHandler(async (event) => {
     const parsed = updatePropertySchema.safeParse(body)
     if (!parsed.success) {
         const details: Record<string, string> = {}
-        for (const err of parsed.error.errors) {
+        for (const err of parsed.error.issues) {
         details[err.path.join('.')] = err.message
         }
         return sendError(event, new ValidationError(details))

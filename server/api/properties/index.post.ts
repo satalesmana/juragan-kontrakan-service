@@ -11,7 +11,7 @@ export default defineHandler(async (event) => {
     const parsed = propertySchema.safeParse(body)
     if (!parsed.success) {
         const details: Record<string, string> = {}
-        for (const err of parsed.error.errors) {
+        for (const err of parsed.error.issues) {
             details[err.path.join('.')] = err.message
         }
         return sendError(event, new ValidationError(details))

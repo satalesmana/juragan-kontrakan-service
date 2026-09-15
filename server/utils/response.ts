@@ -12,7 +12,9 @@ interface SuccessMeta {
 export function sendSuccess(event: H3Event, data: unknown, meta?: SuccessMeta, statusCode = 200) {
   const response: Record<string, unknown> = { success: true, data }
   if (meta) response.meta = meta
-  event.node.res.statusCode = statusCode
+  if (event.node?.res) {
+    event.node.res.statusCode = statusCode
+  }
   return response
 }
 
@@ -32,7 +34,9 @@ export function sendPaginated(
 }
 
 export function sendError(event: H3Event, error: AppError) {
-  event.node.res.statusCode = error.statusCode
+  if (event.node?.res) {
+    event.node.res.statusCode = error.statusCode
+  }
   return {
     success: false,
     error: {

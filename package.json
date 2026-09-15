@@ -7,13 +7,15 @@
     "preview": "nitro preview"
   },
   "imports": {
-    "#*": "./*"
+    "#server/*": "./server/*"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "latest",
     "jiti": "^2.7.0",
     "nitro": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

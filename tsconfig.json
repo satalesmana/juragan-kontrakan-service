@@ -1,14 +1,15 @@
 {
   "extends": ["nitro/tsconfig"],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./*"],
-      "#utils/*": ["server/utils/*"],
-      "#services/*": ["server/services/*"],
-      "#repositories/*": ["server/repositories/*"],
-      "#models/*": ["server/models/*"],
-      "#schemas/*": ["server/schemas/*"]
+      "#server/*": ["./server/*"],
+      "#utils/*": ["./server/utils/*"],
+      "#services/*": ["./server/services/*"],
+      "#repositories/*": ["./server/repositories/*"],
+      "#models/*": ["./server/models/*"],
+      "#schemas/*": ["./server/schemas/*"],
+      "#middleware/*": ["./server/middleware/*"]
     }
   }
 }
