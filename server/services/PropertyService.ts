@@ -1,5 +1,6 @@
-import { PropertyRepository, PropertyDB } from '../repositories/PropertyRepository'
-import { PropertyInput, UpdatePropertyInput } from '../schemas/property'
+import { PropertyRepository } from '../repositories/PropertyRepository'
+import type { PropertyDB } from '../repositories/PropertyRepository'
+import type { PropertyInput, UpdatePropertyInput } from '../schemas/property'
 
 export class PropertyService {
   private propertyRepo = new PropertyRepository()

@@ -14,6 +14,11 @@ export interface DbConfig {
 export async function connectDatabase(config?: Partial<DbConfig>): Promise<Db> {
   const uri = config?.uri || process.env.MONGODB_URI || 'mongodb://localhost:27017'
   const dbName = config?.dbName || process.env.MONGODB_DB_NAME || 'rental_management'
+  let connectionString = uri
+
+  const connectionUrl = new URL(connectionString)
+  connectionUrl.searchParams.set('retryWrites', 'false')
+  connectionString = connectionUrl.toString()
 
   if (client) {
     const currentDb = client.db(dbName)
@@ -23,7 +28,7 @@ export async function connectDatabase(config?: Partial<DbConfig>): Promise<Db> {
     }
   }
 
-  client = new MongoClient(uri)
+  client = new MongoClient(connectionString)
   await client.connect()
   db = client.db(dbName)
   console.log(`[mongodb] Connected to ${dbName}`)
