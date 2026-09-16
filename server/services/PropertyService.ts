@@ -1,61 +1,37 @@
-import type { CreatePropertyInput, UpdatePropertyInput } from '../schemas/property'
-import { PropertyRepository } from '../repositories/PropertyRepository'
-
-export interface PropertyListResult {
-  properties: Array<{
-    _id: string
-    name: string
-    address?: string
-    createdAt: string
-  }>
-  total: number
-}
+import { PropertyRepository, PropertyDB } from '../repositories/PropertyRepository'
+import { PropertyInput, UpdatePropertyInput } from '../schemas/property'
 
 export class PropertyService {
-  private readonly repo = new PropertyRepository()
+  private propertyRepo = new PropertyRepository()
 
-  async list(page: number, limit: number, search?: string): Promise<PropertyListResult> {
-    const skip = (page - 1) * limit
-    const items = await this.repo.findAll(limit, skip, search)
-    const total = await this.repo.count(search)
-    return {
-      properties: items.map((p) => ({
-        _id: p._id.toString(),
-        name: p.name,
-        address: p.address,
-        createdAt: p.createdAt.toISOString(),
-      })),
-      total,
+  async createProperty(userId: string, input: PropertyInput): Promise<PropertyDB> {
+    return this.propertyRepo.create({
+      ...input,
+      createdBy: new (await import('mongodb')).ObjectId(userId),
+      updatedBy: new (await import('mongodb')).ObjectId(userId)
+    })
+  }
+
+  async getProperties(userId: string, page = 1, limit = 20, search?: string) {
+    return this.propertyRepo.findByUserId(userId, page, limit, search)
+  }
+
+  async getPropertyById(id: string, userId: string): Promise<PropertyDB | null> {
+    const property = await this.propertyRepo.findById(id)
+    if (!property) return null
+    if (property.createdBy.toString() !== userId) {
+      throw new Error('Unauthorized property access')
     }
+    return property
   }
 
-  async create(input: CreatePropertyInput): Promise<{ _id: string; name: string; createdAt: string }> {
-    const doc = await this.repo.create(input)
-    return {
-      _id: doc._id.toString(),
-      name: doc.name,
-      createdAt: doc.createdAt.toISOString(),
-    }
+  async updateProperty(id: string, userId: string, input: UpdatePropertyInput): Promise<PropertyDB | null> {
+    await this.getPropertyById(id, userId) // check ownership
+    return this.propertyRepo.update(id, userId, input)
   }
 
-  async findById(id: string): Promise<{ _id: string; name: string; address?: string; createdAt: string } | null> {
-    const doc = await this.repo.findById(id)
-    if (!doc) return null
-    return {
-      _id: doc._id.toString(),
-      name: doc.name,
-      address: doc.address,
-      createdAt: doc.createdAt.toISOString(),
-    }
-  }
-
-  async update(id: string, input: UpdatePropertyInput): Promise<{ _id: string; name: string; address?: string } | null> {
-    const doc = await this.repo.update(id, input)
-    if (!doc) return null
-    return { _id: doc._id.toString(), name: doc.name, address: doc.address }
-  }
-
-  async delete(id: string): Promise<boolean> {
-    return this.repo.delete(id)
+  async deleteProperty(id: string, userId: string): Promise<boolean> {
+    await this.getPropertyById(id, userId) // check ownership
+    return this.propertyRepo.delete(id, userId)
   }
 }

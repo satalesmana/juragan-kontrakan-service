@@ -1,66 +1,86 @@
-import type { Db } from 'mongodb'
 import { ObjectId } from 'mongodb'
-import type { Property } from '../models/Property'
 import { getDatabase } from '../plugins/mongodb'
+
+export interface PropertyDB {
+  _id?: ObjectId
+  name: string
+  address?: string
+  settings: {
+    defaultDueDay: number
+    reminderDays: number[]
+    currency: 'IDR'
+  }
+  createdAt: Date
+  updatedAt: Date
+  createdBy: ObjectId
+  updatedBy: ObjectId
+}
 
 export class PropertyRepository {
   private readonly collectionName = 'properties'
 
-  private getCollection(db: Db) {
-    return db.collection<Property>(this.collectionName)
+  async getCollection() {
+    const db = await getDatabase()
+    return db.collection<PropertyDB>(this.collectionName)
   }
 
-  async create(input: Omit<Property, '_id' | 'createdAt' | 'updatedAt'>): Promise<Property> {
-    const db = getDatabase()
+  async create(data: Omit<PropertyDB, '_id' | 'createdAt' | 'updatedAt'>): Promise<PropertyDB> {
+    const col = await this.getCollection()
     const now = new Date()
-    const doc: Property = {
-      ...input,
-      _id: new ObjectId(),
+    const doc: PropertyDB = {
+      ...data,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: now
     }
-    await this.getCollection(db).insertOne(doc)
+    const res = await col.insertOne(doc as any)
+    doc._id = res.insertedId
     return doc
   }
 
-  async findById(id: string): Promise<Property | null> {
-    const db = getDatabase()
-    return this.getCollection(db).findOne({ _id: new ObjectId(id) })
+  async findById(id: string): Promise<PropertyDB | null> {
+    if (!ObjectId.isValid(id)) return null
+    const col = await this.getCollection()
+    return col.findOne({ _id: new ObjectId(id) })
   }
 
-  async findAll(limit: number, skip: number, search?: string): Promise<Property[]> {
-    const db = getDatabase()
-    const filter = search
-      ? { $or: [{ name: { $regex: search, $options: 'i' } }, { address: { $regex: search, $options: 'i' } }] }
-      : {}
-    return this.getCollection(db)
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray()
+  async findByUserId(userId: string, page = 1, limit = 20, search?: string): Promise<{ properties: PropertyDB[], total: number }> {
+    const col = await this.getCollection()
+    const query: any = { createdBy: new ObjectId(userId) }
+    if (search) {
+      query.name = { $regex: search, $options: 'i' }
+    }
+    const skip = (page - 1) * limit
+    const [properties, total] = await Promise.all([
+      col.find(query).skip(skip).limit(limit).toArray(),
+      col.countDocuments(query)
+    ])
+    return { properties, total }
   }
 
-  async count(search?: string): Promise<number> {
-    const db = getDatabase()
-    const filter = search
-      ? { $or: [{ name: { $regex: search, $options: 'i' } }, { address: { $regex: search, $options: 'i' } }] }
-      : {}
-    return this.getCollection(db).countDocuments(filter)
-  }
+  async update(id: string, userId: string, data: Partial<PropertyDB>): Promise<PropertyDB | null> {
+    if (!ObjectId.isValid(id)) return null
+    const col = await this.getCollection()
+    const updateDoc = {
+      ...data,
+      updatedAt: new Date(),
+      updatedBy: new ObjectId(userId)
+    }
+    delete (updateDoc as any)._id
+    delete (updateDoc as any).createdBy
+    delete (updateDoc as any).createdAt
 
-  async update(id: string, update: Partial<Omit<Property, '_id' | 'createdAt'>>): Promise<Property | null> {
-    const db = getDatabase()
-    await this.getCollection(db).updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { ...update, updatedAt: new Date() } },
+    const res = await col.findOneAndUpdate(
+      { _id: new ObjectId(id), createdBy: new ObjectId(userId) },
+      { $set: updateDoc },
+      { returnDocument: 'after' }
     )
-    return this.findById(id)
+    return res.value || res
   }
 
-  async delete(id: string): Promise<boolean> {
-    const db = getDatabase()
-    const result = await this.getCollection(db).deleteOne({ _id: new ObjectId(id) })
-    return result.deletedCount === 1
+  async delete(id: string, userId: string): Promise<boolean> {
+    if (!ObjectId.isValid(id)) return false
+    const col = await this.getCollection()
+    const res = await col.deleteOne({ _id: new ObjectId(id), createdBy: new ObjectId(userId) })
+    return res.deletedCount > 0
   }
 }

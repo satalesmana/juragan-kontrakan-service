@@ -1,20 +1,30 @@
-import { defineHandler, getQuery, readBody, getRouterParam } from 'h3'
-import { sendSuccess } from '../../utils/response'
+import { defineHandler, getQuery } from 'h3'
+import { sendSuccess, sendError } from '../../utils/response'
 import { PropertyService } from '../../services/PropertyService'
+import { requireAuth } from '../../middleware/auth'
+import { UnauthorizedError } from '../../utils/errors'
 
 const service = new PropertyService()
 
 export default defineHandler(async (event) => {
+  try {
+    const user = requireAuth(event)
     const query = getQuery(event)
     const page = Math.max(1, parseInt(String(query.page ?? 1), 10))
     const limit = Math.min(100, Math.max(1, parseInt(String(query.limit ?? 20), 10)))
     const search = typeof query.search === 'string' ? query.search : undefined
 
-    const result = await service.list(page, limit, search)
+    const result = await service.getProperties(user.id, page, limit, search)
     return sendSuccess(event, result.properties, {
-        page,
-        limit,
-        total: result.total,
-        totalPages: Math.ceil(result.total / limit),
+      page,
+      limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / limit)
     })
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Invalid token') {
+      return sendError(event, new UnauthorizedError())
+    }
+    throw error
+  }
 })
