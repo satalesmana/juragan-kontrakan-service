@@ -34,9 +34,10 @@ export function sendPaginated(
 }
 
 export function sendError(event: H3Event, error: AppError) {
-  if (event.node?.res) {
-    event.node.res.statusCode = error.statusCode
+  if (event.res) {
+    event.res.status = error.statusCode
   }
+  
   return {
     success: false,
     error: {
