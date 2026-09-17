@@ -1,5 +1,7 @@
 # Juragan Kontrakan API
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Backend API for **Juragan Kontrakan** (Rental Management System), built with **Nitro v3**, **TypeScript**, and **MongoDB**.
 
 ## Tech Stack
