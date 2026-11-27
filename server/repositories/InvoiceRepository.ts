@@ -42,11 +42,27 @@ export class InvoiceRepository {
     return col
   }
 
+  private toIdVariants(id: string): (ObjectId | string)[] {
+    return ObjectId.isValid(id) ? [new ObjectId(id), id] : [id]
+  }
+
+  private toObjectIdIfValid(val: any): any {
+    if (typeof val === 'string' && ObjectId.isValid(val)) {
+      return new ObjectId(val)
+    }
+    return val
+  }
+
   async create(data: Omit<InvoiceDB, '_id' | 'createdAt' | 'updatedAt'>): Promise<InvoiceDB> {
     const col = await this.getCollection()
     const now = new Date()
     const doc: InvoiceDB = {
       ...data,
+      propertyId: this.toObjectIdIfValid(data.propertyId),
+      roomId: this.toObjectIdIfValid(data.roomId),
+      tenantId: this.toObjectIdIfValid(data.tenantId),
+      contractId: this.toObjectIdIfValid(data.contractId),
+      createdBy: this.toObjectIdIfValid(data.createdBy),
       createdAt: now,
       updatedAt: now
     }
@@ -63,7 +79,7 @@ export class InvoiceRepository {
 
   async findByContractAndPeriod(contractId: string, billingPeriod: string): Promise<InvoiceDB | null> {
     const col = await this.getCollection()
-    return col.findOne({ contractId: new ObjectId(contractId), billingPeriod })
+    return col.findOne({ contractId: { $in: this.toIdVariants(contractId) } as any, billingPeriod })
   }
 
   async list(filters: {
@@ -83,11 +99,11 @@ export class InvoiceRepository {
     const query: any = {}
 
     if (filters.propertyIds && filters.propertyIds.length > 0) {
-      query.propertyId = { $in: filters.propertyIds.map(id => new ObjectId(id)) }
+      query.propertyId = { $in: filters.propertyIds.flatMap(id => this.toIdVariants(id)) }
     }
-    if (filters.tenantId) query.tenantId = new ObjectId(filters.tenantId)
-    if (filters.roomId) query.roomId = new ObjectId(filters.roomId)
-    if (filters.contractId) query.contractId = new ObjectId(filters.contractId)
+    if (filters.tenantId) query.tenantId = { $in: this.toIdVariants(filters.tenantId) }
+    if (filters.roomId) query.roomId = { $in: this.toIdVariants(filters.roomId) }
+    if (filters.contractId) query.contractId = { $in: this.toIdVariants(filters.contractId) }
     if (filters.billingPeriod) query.billingPeriod = filters.billingPeriod
     if (filters.status) query.status = filters.status
     if (filters.search) {
